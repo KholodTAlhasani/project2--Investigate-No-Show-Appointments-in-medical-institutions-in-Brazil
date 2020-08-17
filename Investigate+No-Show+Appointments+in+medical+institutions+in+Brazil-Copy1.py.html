@@ -1,0 +1,330 @@
+
+# coding: utf-8
+
+# 
+# 
+# 
+# 
+# 
+# 
+# # Investigate No-Show Appointments in medical institutions in Brazil
+# 
+# ## Table of Contents
+# <ul>
+# <li><a href="#intro">Introduction</a></li>
+# <li><a href="#wrangling">Data Wrangling</a></li>
+# <li><a href="#eda">Exploratory Data Analysis</a></li>
+# <li><a href="#conclusions">Conclusions</a></li>
+# </ul>
+
+# <a id='intro'></a>
+# # Introduction
+# 
+# > This project investigate the No-show or show appointments in several medical institution around Brazil. The data set in this analysis contains the recoreds for over 110k patints aroud the contry with aditional information about the health condition of the patients, thier living nighbourhood and if they are inrolled in the financial support program provided by the goverment or not. the data set will be cleand and explored for an initial trends and conclusion.
+
+# <a id='wrangling'></a>
+# ## Data Wrangling
+# 
+# 
+
+# In[1]:
+
+
+import pandas as pd 
+import numpy as np 
+import matplotlib as plt 
+import seaborn as sns
+get_ipython().magic('matplotlib inline')
+
+
+# In[2]:
+
+
+
+df=pd.read_csv('noshowappointments-kagglev2-may-2016.csv')
+df.head(1)
+
+
+# In[3]:
+
+
+df.shape  #in this analysis we are using 110527 patients records collected from ,,,,,,
+
+
+# In[4]:
+
+
+df.info()  #no nulls 
+
+
+# In[5]:
+
+
+df.columns
+
+
+# - some of the columns labels contains issues like typos, mixed upper and lower case letters. 
+# - Some of the columns need to change the format of the data like patient_id, scheduled_day and appointment_day. 
+
+# In[6]:
+
+
+df.columns=['patient_id','appointment_id', 'gender', 'scheduled_day','appointment_day','age', 'neighbourhood','scholarship','hypertension','diabetes','alcoholism','handicap','sms_received','no_show']
+df.head(1)   #i have changed all upper-case to lower, corrected typos and used underscore 
+
+
+# In[7]:
+
+
+sum(df.duplicated()) #no duplicates 
+
+
+# In[8]:
+
+
+df['scheduled_day']=pd.to_datetime(df['scheduled_day'])         #changing the format from object to date time 
+df['appointment_day']=pd.to_datetime(df['appointment_day'])
+df['patient_id']=df['patient_id'].astype(int)                   #changing the format from float to int
+df.head(2)
+
+
+# In[9]:
+
+
+df.describe()
+
+
+# In[10]:
+
+
+df.hist(figsize=(10,8));
+
+
+# # General Observations:
+# - From the summary statistics it is noticed that the min age is -1,which is not realistic or it could be an infants patients. In such a situation these rows could be dropped or replaced with mean or median depending on different factors such as amount of data and importance. 
+# - The column 'appointment_id' have no impact and will not be used in the analysis, so it will be drpped. 
+
+# In[11]:
+
+
+df[df.age<=0]  
+
+
+# - 3540 rows out of 110527 is more than 3% of the original data set so dropping the data is not a good idea, but insted i will remove the outliers.
+
+# In[12]:
+
+
+df=df[(df.age>-1) &(df.age<115)]
+sns.boxplot(df.age);
+
+
+# In[13]:
+
+
+df[df.age<0] #to chick if all were muted 
+
+
+# In[14]:
+
+
+df.drop(['appointment_id'], axis=1, inplace=True)
+df.head(2)
+
+
+# - for plotting purpuses the 'no_show' column will replace its value(yes,no) to 0s & 1s
+# - 'no_show'data format will be change to bool, 0s indicate False (showed to the appointment), and 1s indicate True (did not show).
+# - then ive counted the values to have an insight about it. 
+
+# In[15]:
+
+
+df['no_show'].replace({'No':0,'Yes':1}, inplace=True)
+
+
+# In[16]:
+
+
+df['no_show'] = df['no_show'].astype('bool', inplace=True)
+
+
+# In[17]:
+
+
+df['no_show'].nunique()
+
+
+# In[18]:
+
+
+df['no_show'].value_counts()
+
+
+# In[19]:
+
+
+df.to_csv('project2_cleaned.csv', index=False)
+
+
+# 
+# 
+# ## Exploratory Data Analysis
+
+# In[20]:
+
+
+
+import pandas as pd 
+import numpy as np 
+import matplotlib.pyplot as plt
+import seaborn as sns
+get_ipython().magic('matplotlib inline')
+dfc=pd.read_csv('project2_cleaned.csv')
+
+
+# In[21]:
+
+
+dfc.info()
+
+
+# 
+# ## The proportion subjects showed vs not showed to thier appointments
+
+# In[22]:
+
+
+dfc.no_show.value_counts().plot.pie(figsize=(6,6),autopct='%.2f%%',explode=(0, .09), title=("Status" + ' (%) (Per appointment)\n'), colors=['pink','gray']);
+
+#0s indicates False (showed to the appointment), and 1s indicate True (did not show).
+
+
+# true for yes 20.19% did not show for their appointment 
+
+# # Neighbourhood:
+# -Does Neighbourhoods have the same numbers of No Shows? or have variations 
+
+# In[23]:
+
+
+dfc['neighbourhood'].value_counts()    
+
+
+# - we have 81 neighbourhood, here am counting the number of patients per Neighbourhood regardless the no show.
+# - after, i will group it with the no-show to see the numbers of no-show per Neighbourhood
+
+# In[24]:
+
+
+n_show=dfc.groupby('neighbourhood').sum()['no_show']
+
+
+# In[25]:
+
+
+n_show.plot(kind='bar', figsize=(15,5), color='pink', title='Number of No show per Neighborhood');
+
+
+
+# In[26]:
+
+
+n_show=n_show.to_frame()
+n_show.reset_index(inplace=True)
+n_show.sort_values(ascending=False, by='no_show', inplace=True)
+n_show.tail()
+
+
+# In[27]:
+
+
+n_show.plot(kind='bar', figsize=(15,5), color='pink');
+plt.xlabel('neighborhood')
+plt.ylabel('no_show')
+plt.title=('No show of Patients per Neighborhood')
+plt.legend()
+#after sorting ascendingly for better visual
+
+
+# JARDIM CAMBURI neighbourhood has the highest numbers of patients skipping their appointments while PARQUE INDUSTRIAL neighbourhood has none no-show incidence
+# 
+
+# ### Medical Conditions: Diabetes, Hypertension, Alcoholism:
+# - Does a specific health issuse patients committed to their appointments more than the rest?
+
+# In[28]:
+
+
+dfc.groupby('diabetes').sum()['no_show'].plot(kind='bar', figsize=(5,5));
+plt.xlabel('diabetes')
+plt.ylabel('no_show')
+plt.title=('Number of No-show for Diabetic patients')
+plt.legend();
+
+
+# In[29]:
+
+
+dfc.groupby('hypertension').sum()['no_show'].plot( kind='bar', figsize=(5,5));
+plt.xlabel('hypertension')
+plt.ylabel('no show')
+plt.title=('Number of No-show for hypertention patients')
+plt.legend();
+
+
+# In[30]:
+
+
+dfc.groupby('alcoholism').sum()['no_show'].plot( kind='bar', figsize=(5,5));
+plt.xlabel('alcoholism')
+plt.ylabel('no show')
+plt.title=('Number of No show for alcoholic patients')
+plt.legend();
+
+
+# the numbers of no show cases per health conditions were very similar 
+# alcoholic patients have the highst numbers of patients skipping their appointments anonge the rest of the health conditions veiwed.
+
+# ### 2- SMS: 
+# - Is SMS reminders associated with lowered incidences of No Shows?
+
+# In[31]:
+
+
+sms={1:'Yes', 0:'No'} #to map this dictionary for the sms_received column 
+ax = sns.barplot(x=dfc.sms_received.map(sms), y=dfc.no_show)
+ax.set_ylabel('%No-Show')
+
+
+# the percentage of no show patients was mach higher in those how recived sms reminders 
+
+# <a id='conclusions'></a>
+# ## Conclusions
+# 
+# In this investigation of No-Show Appointments in medical institutions in Brazil, the data were cleaned and explored for initial insghts of the factors that may have higher numbers of no-show more then other.  
+# 
+# First, i have started with chicking the proportion of subjects showed vs not showed to thier appointments, almost 80% of the subjects did commit to their appointments.
+# 
+# Then more exceploration was done for the no-show incidence to see if there are factors that have higher number of no-show more then others. begining with Neighbourhood, from the plot we can see large differences in no-show number between different Neighbourhoods, some of it have extremly high numbers while others dont. 
+# 
+# Medical Conditions (Diabetes, Hypertension, Alcoholism) were very similar in the numbers of no show. no none of these conditions have higher numbers of no show compared to others.
+# 
+# 
+# the SMS reminders results was surprising, the percentage of no show patients was mach higher in those how recived sms reminders.
+# 
+# 
+# limitations:
+# The numbers of appontment per Neighbourhood regardless the no-show was not equal btween Neighbourhoods. some are having up to 7717 appointment while other Neighbourhoods have only 1. equal numbers of appointments can bring much more clear conclusions. Also having background information about the distance to the health care facility, financial state of the Neighbourhood can help exeploring more predictors.
+#  
+#  
+#  
+# 
+# 
+# 
+# 
+
+# In[32]:
+
+
+df.to_csv('project2_conclusion.csv', index=False)
+

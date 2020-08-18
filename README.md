@@ -1,1 +1,3 @@
 # project2--Investigate-No-Show-Appointments-in-medical-institutions-in-Brazil
+
+This project is a part of the Data Analytics Nano-degree Program offered by Udacity. The data set am working with here was taken from Kiggle. It investigate the No-show or show appointments in several medical institution around Brazil. The data set in this analysis contains the recoreds for over 110k patints around the country with additional information about the health condition of the patients, thier living nighbourhood and if they are inrolled in the financial support program provided by the goverment or not. the data set will be cleand and explored for an initial trends and conclusion.
